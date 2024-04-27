@@ -38,18 +38,17 @@
 namespace real_car
 {
 
-class HardwareCommandPub : public rclcpp::Node  //the node definition for the publisher to talk to micro-ROS agent
+// This is the node definition for the publisher to talk to microROS agent
+class HardwareCommandPub : public rclcpp::Node
 {
   public:
     HardwareCommandPub();
-    void publishData(double data);
-
+    void publishSpeed(int speed);
+    void publishAngle(double angle);
   private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
 
 };
-
-
 
 struct JointValue
 {
@@ -57,9 +56,6 @@ struct JointValue
   double velocity{0.0};
   double effort{0.0};
 };
-
-
-
 
 struct Joint
 {
@@ -75,6 +71,7 @@ struct Joint
   JointValue state;
   JointValue command;
 };
+
 class RealCarHardware : public hardware_interface::SystemInterface
 {
 public:
@@ -108,14 +105,20 @@ public:
 
   std::shared_ptr<HardwareCommandPub> hw_cmd_pub_;    //make the publisher node a member
 
+  // function defintion to convert normalized twist.linear.x to pwm
+  void velToPWM(double vel, int& motorPWM);
+
 private:
-  // Parameters for the CarlikeBot simulation
-  //double hw_start_sec_;
-  //double hw_stop_sec_;
 
   // std::vector<std::tuple<std::string, double, double>>
   //   hw_interfaces_;  // name of joint, state, command
   std::map<std::string, Joint> hw_interfaces_;
+  int motorPWM;
+  int servoPWM;  
+  double normalizedSpeed;
+  double normalizedAngle;  
+  double speed2publish;
+  double angle2publish;
 };
 
 }  // namespace real_car

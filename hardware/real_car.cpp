@@ -27,23 +27,57 @@
 
 namespace real_car
 {
+
+// Create the topic that the Pico will subscribe to
 HardwareCommandPub::HardwareCommandPub() : Node("hardware_command_publisher")
 {
   publisher_ = this->create_publisher<std_msgs::msg::String>("string_publisher", 10);
 }
 
-void HardwareCommandPub::publishData(double data)
+// Function for publishing to the topic that the Pico will subscribe to
+void HardwareCommandPub::publishAngle(double angle)
 {
   auto message = std_msgs::msg::String();
-  message.data = std::to_string(data);
+  message.data = "Angle = " + std::to_string(angle);
   publisher_->publish(message);
 }
 
+// Function for publishing to the topic that the Pico will subscribe to
+void HardwareCommandPub::publishSpeed(int speed)
+{
+  auto message = std_msgs::msg::String();
+  message.data = "Speed = " + std::to_string(speed);
+  publisher_->publish(message);
+}
+
+// Function for converting twist.linear.x to PWM signals
+void RealCarHardware::velToPWM(double vel, int& motorPWM)
+{
+  // Define the mapping constants
+  double maxSpeed = 1.0;   // Maximum speed
+  int maxPWM = 1625000;       // Maximum PWM value (for max forward)
+  int minPWM = 1375000;       // Minimum PWM value (for max reverse)
+  int brakePWM = 1500000;     // PWM value for braking
+
+  // Convert speed to PWM signal
+  if (vel > 0) {  // Forward motion
+      motorPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
+  } else if (vel < 0) {  // Reverse motion
+      motorPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
+  } else {  // Brake (no motion)
+      motorPWM = brakePWM;
+  }
+}
+
+
+
+
+// Start of Hardware Interface Stuff
 hardware_interface::CallbackReturn RealCarHardware::on_init(
   const hardware_interface::HardwareInfo & info)
 {
 
- hw_cmd_pub_ = std::make_shared<HardwareCommandPub>();
+  hw_cmd_pub_ = std::make_shared<HardwareCommandPub>();
 
   if (
     hardware_interface::SystemInterface::on_init(info) !=
@@ -164,14 +198,10 @@ hardware_interface::CallbackReturn RealCarHardware::on_init(
     }
   }
 
-  // // BEGIN: This part here is for exemplary purposes - Please do not copy to your production
-  // code
-//  hw_start_sec_ = std::stod(info_.hardware_parameters["example_param_hw_start_duration_sec"]);
-//  hw_stop_sec_ = std::stod(info_.hardware_parameters["example_param_hw_stop_duration_sec"]);
-  // // END: This part here is for exemplary purposes - Please do not copy to your production code
-
+  // Servo/Steering Joint is saved as this variable
   hw_interfaces_["steering"] = Joint("virtual_front_wheel_joint");
 
+  // Motor/Traction Joint is saved as this variable
   hw_interfaces_["traction"] = Joint("virtual_rear_wheel_joint");
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -247,13 +277,7 @@ hardware_interface::CallbackReturn RealCarHardware::on_activate(
 {
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Activating ...please wait...");
 
-  /*for (auto i = 0; i < hw_start_sec_; i++)
-  {
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    RCLCPP_INFO(
-      rclcpp::get_logger("RealCarHardware"), "%.1f seconds left...", hw_start_sec_ - i);
-  }*/
-
+  // Idk what this does
   for (auto & joint : hw_interfaces_)
   {
     joint.second.state.position = 0.0;
@@ -278,16 +302,9 @@ hardware_interface::CallbackReturn RealCarHardware::on_activate(
 hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Deactivating ...please wait...");
-
-  /*for (auto i = 0; i < hw_stop_sec_; i++)
-  {
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    RCLCPP_INFO(
-      rclcpp::get_logger("RealCarHardware"), "%.1f seconds left...", hw_stop_sec_ - i);
-  }*/
-  // END: This part here is for exemplary purposes - Please do not copy to your production code
+  // I don't think we ever disconnect/deactivate this hardware interface
+  // so this is left blank besides the print outs
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Successfully deactivated!");
 
   return hardware_interface::CallbackReturn::SUCCESS;
@@ -296,23 +313,22 @@ hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
 hardware_interface::return_type RealCarHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
-
+  // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2
   hw_interfaces_["steering"].state.position = hw_interfaces_["steering"].command.position;
 
   hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity;
   hw_interfaces_["traction"].state.position +=
     hw_interfaces_["traction"].state.velocity * period.seconds();
+  // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2
 
-  RCLCPP_INFO(
-    rclcpp::get_logger("RealCarHardware"), "Got position state: %.2f for joint '%s'.",
-    hw_interfaces_["steering"].command.position, hw_interfaces_["steering"].joint_name.c_str());
+  // THIS WHERE WE WANT TO READ THE OUR ENCODER VALUES (IR SPEED SENSOR DATA)
+  // First, read in the number of counts from Pico_Publisher Topic
+  // Second, figure out the number of counts per revolution of the gearbox from Pico_Publisher Topic (this is constant, so we have calculate it by testing)
+  // Third, to calculate angle in radians --> WheelAngleInRads = (number of counts)*(number of counts per revolution)
+  // Basically, hw_interfaces_["traction"].state.position = WheelAngleInRads
 
-  RCLCPP_INFO(
-    rclcpp::get_logger("RealCarHardware"), "Got velocity state: %.2f for joint '%s'.",
-    hw_interfaces_["traction"].command.velocity, hw_interfaces_["traction"].joint_name.c_str());
-
-  // END: This part here is for exemplary purposes - Please do not copy to your production code
+  // The current speed of the motor needs to be fed into hw_interfaces_["traction"].state.velocity
+  // We need to figure out the corresponding counts per second to the max, neutral, and min speed of the motor.
 
   return hardware_interface::return_type::OK;
 }
@@ -320,19 +336,30 @@ hardware_interface::return_type RealCarHardware::read(
 hardware_interface::return_type real_car ::RealCarHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
+  // Dividing by 20 will return the same value as the TwistMsg sent
+  normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
-  RCLCPP_INFO(
-    rclcpp::get_logger("RealCarHardware"), "Got position command: %.2f for joint '%s'.",
-    hw_interfaces_["steering"].command.position, hw_interfaces_["steering"].joint_name.c_str());
+  /*  To convert to PWM signals that the Pico can use, let's assume the max speed we want
+      to go is 1/4th of the top speed. Also our max linear.x = 1 and min linear.x = -1.
+      Therefore:
+        linear.x = 1 --> 1625000 nanoseconds  (max forward)
+        linear.x = 0 --> 1500000 nanoseconds  (brake)
+        linear.x = -1 --> 1375000 nanoseconds (max reverse)
+  */
+  velToPWM(normalizedSpeed, motorPWM);
 
-  RCLCPP_INFO(
-    rclcpp::get_logger("RealCarHardware"), "Got velocity command: %.2f for joint '%s'.",
-    hw_interfaces_["traction"].command.velocity, hw_interfaces_["traction"].joint_name.c_str());
+  // Angle = -1 --> Duty Cycle of 1.0 ms
+  // Angle = 0 --> Duty Cycle of 1.5 ms
+  // Angle = 1 --> Duty Cycle of 2.0 ms
 
-  // END: This part here is for exemplary purposes - Please do not copy to your production code
+  // This somehow returns the same value as the TwistMsg sent
+  normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
+  velToPWM(normalizedAngle, servoPWM);
 
-  hw_cmd_pub_->publishData(hw_interfaces_["traction"].command.velocity);  //publish to topic
+  // These command are supposed to write/publish to the topic seen and subscribed by the Pico
+  hw_cmd_pub_->publishSpeed(motorPWM);
+  hw_cmd_pub_->publishAngle(servoPWM);
+
   return hardware_interface::return_type::OK;
 }
 
