@@ -331,7 +331,8 @@ hardware_interface::return_type RealCarHardware::read(
   hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity;
 
   // calculates the position of the rear wheels by adding the current motor velocity * the time it took since this function was last called. this is some sort of integration
-  hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds();
+  double noise = 0.1; // Example noise level
+  hw_interfaces_["traction"].state.position += (hw_interfaces_["traction"].command.velocity + noise) * period.seconds();
   
   // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2!!!!!!!!
 
@@ -361,7 +362,7 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
 
   // This somehow returns the same value as the TwistMsg sent
   normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
-  
+
   /*  To convert to PWM signals that the Pico can use, let's assume the max speed we want
       to go is 1/4th of the top speed. Also our max linear.x = 1 and min linear.x = -1.
       Therefore:
