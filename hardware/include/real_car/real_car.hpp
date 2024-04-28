@@ -38,17 +38,52 @@
 namespace real_car
 {
 
-// This is the node definition for the publisher to talk to microROS agent
-class HardwareCommandPub : public rclcpp::Node
+// This is the node definition for the publisher that the Pi publishes to and Pico subscribes to for motor speeds
+class HardwareCommandPubMotor : public rclcpp::Node
 {
   public:
-    HardwareCommandPub();
+    HardwareCommandPubMotor();
     void publishSpeed(int speed);
-    void publishAngle(double angle);
   private:
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr motor_publisher_;
 
 };
+
+// This is the node definition for the publisher that the Pi publishes to and Pico subscribes to servo speeds
+class HardwareCommandPubServo : public rclcpp::Node
+{
+  public:
+    HardwareCommandPubServo();
+    void publishAngle(int angle);
+  private:
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr servo_publisher_;
+
+};
+
+// This is the node definition for the subscriber that the Pico publishes to and Pi subscribes to
+// class HardwareCommandSub : public rclcpp::Node
+// {
+//   public:
+//     HardwareCommandSub() : Node("hardware_command_subscriber")
+//     {
+//       subscription_ = this->create_subscription<std_msgs::msg::String>("pi_subscribing_topic", 10,
+//         [this](const std_msgs::msg::String::SharedPtr msg) {
+//             // Callback function when message is received
+//             RCLCPP_INFO(this->get_logger(), "Received command: '%s'", msg->data.c_str());
+//             processMessage(msg->data);
+//         });
+//     }
+
+// private:
+//     void processMessage(const std::string &message)
+//     {
+//       double currentSpeed = std::stod(message);
+//       hw_interfaces_["traction"].state.velocity = currentSpeed;
+//     }
+//     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+// };
+// };
+
 
 struct JointValue
 {
@@ -103,7 +138,9 @@ public:
   hardware_interface::return_type write(
     const rclcpp::Time & time, const rclcpp::Duration & period) override;
 
-  std::shared_ptr<HardwareCommandPub> hw_cmd_pub_;    //make the publisher node a member
+  std::shared_ptr<HardwareCommandPubMotor> motor_pub_;    //make the publisher node a member
+  std::shared_ptr<HardwareCommandPubServo> servo_pub_;    //make the publisher node a member  
+  //std::shared_ptr<HardwareCommandSub> hw_cmd_sub_;    //make the subscriber node a member
 
   // function defintion to convert normalized twist.linear.x to pwm
   void velToPWM(double vel, int& motorPWM);

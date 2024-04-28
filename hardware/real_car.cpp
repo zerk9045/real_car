@@ -28,27 +28,36 @@
 namespace real_car
 {
 
-// Create the topic that the Pico will subscribe to
-HardwareCommandPub::HardwareCommandPub() : Node("hardware_command_publisher")
+// Create the topic that the Pi will publish to and Pico will subscribe to
+HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 {
-  publisher_ = this->create_publisher<std_msgs::msg::String>("string_publisher", 10);
+  motor_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_motor_publishing_topic", 10);
+}
+
+// Create the topic that the Pi will publish to and Pico will subscribe to
+HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
+{
+  servo_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_servo_publishing_topic", 10);
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPub::publishAngle(double angle)
-{
-  auto message = std_msgs::msg::String();
-  message.data = "Angle = " + std::to_string(angle);
-  publisher_->publish(message);
-}
-
-// Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPub::publishSpeed(int speed)
+void HardwareCommandPubMotor::publishSpeed(int speed)
 {
   auto message = std_msgs::msg::String();
   message.data = "Speed = " + std::to_string(speed);
-  publisher_->publish(message);
+  motor_publisher_->publish(message);
 }
+
+
+// Function for publishing to the topic that the Pico will subscribe to
+void HardwareCommandPubServo::publishAngle(int angle)
+{
+  auto message = std_msgs::msg::String();
+  message.data = "Angle = " + std::to_string(angle);
+  servo_publisher_->publish(message);
+}
+
+
 
 // Function for converting twist.linear.x to PWM signals
 void RealCarHardware::velToPWM(double vel, int& motorPWM)
@@ -77,8 +86,8 @@ hardware_interface::CallbackReturn RealCarHardware::on_init(
   const hardware_interface::HardwareInfo & info)
 {
 
-  hw_cmd_pub_ = std::make_shared<HardwareCommandPub>();
-
+  motor_pub_ = std::make_shared<HardwareCommandPubMotor>();
+  servo_pub_ = std::make_shared<HardwareCommandPubServo>();
   if (
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
@@ -313,13 +322,24 @@ hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
 hardware_interface::return_type RealCarHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
-  // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2
-  hw_interfaces_["steering"].state.position = hw_interfaces_["steering"].command.position;
+  // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2!!!!!!!!
 
+  // sets the incoming position of the front wheels as the current outgoing command position since there is no sensor feedback in simulation
+  hw_interfaces_["steering"].state.position = hw_interfaces_["steering"].command.position; 
+
+  // sets the incoming motor speed as the current outgoing command velocity since there is no sensor feedback in simulation
   hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity;
-  hw_interfaces_["traction"].state.position +=
-    hw_interfaces_["traction"].state.velocity * period.seconds();
-  // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2
+
+  // calculates the position of the rear wheels by adding the current motor velocity * the time it took since this function was last called. this is some sort of integration
+  hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds();
+  
+  // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2!!!!!!!!
+
+  // test code
+
+
+  // test code
+
 
   // THIS WHERE WE WANT TO READ THE OUR ENCODER VALUES (IR SPEED SENSOR DATA)
   // First, read in the number of counts from Pico_Publisher Topic
@@ -339,26 +359,28 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
+  // This somehow returns the same value as the TwistMsg sent
+  normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
+  
   /*  To convert to PWM signals that the Pico can use, let's assume the max speed we want
       to go is 1/4th of the top speed. Also our max linear.x = 1 and min linear.x = -1.
       Therefore:
-        linear.x = 1 --> 1625000 nanoseconds  (max forward)
-        linear.x = 0 --> 1500000 nanoseconds  (brake)
         linear.x = -1 --> 1375000 nanoseconds (max reverse)
+        linear.x = 0 --> 1500000 nanoseconds  (brake)
+        linear.x = 1 --> 1625000 nanoseconds  (max forward)
   */
   velToPWM(normalizedSpeed, motorPWM);
 
+
+
   // Angle = -1 --> Duty Cycle of 1.0 ms
   // Angle = 0 --> Duty Cycle of 1.5 ms
-  // Angle = 1 --> Duty Cycle of 2.0 ms
-
-  // This somehow returns the same value as the TwistMsg sent
-  normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
+  // Angle = 1 --> Duty Cycle of 2.0 ms  
   velToPWM(normalizedAngle, servoPWM);
 
-  // These command are supposed to write/publish to the topic seen and subscribed by the Pico
-  hw_cmd_pub_->publishSpeed(motorPWM);
-  hw_cmd_pub_->publishAngle(servoPWM);
+  // These commands publish to the topic seen and subscribed by the Pico
+  motor_pub_->publishSpeed(motorPWM);
+  servo_pub_->publishAngle(servoPWM);
 
   return hardware_interface::return_type::OK;
 }
