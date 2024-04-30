@@ -83,16 +83,16 @@ void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
 {
     // Define the mapping constants
     double maxSpeed = 1.0;   // Maximum speed
-    int maxPWM = 1625000;       // Maximum PWM value (for max forward)
-    int minPWM = 1375000;       // Minimum PWM value (for max reverse)
-    int brakePWM = 1500000;     // PWM value for braking
+    int maxPWM = 2000000;       // Maximum PWM value (for max left)
+    int minPWM = 1000000;       // Minimum PWM value (for max right)
+    int brakePWM = 1500000;     // PWM value for straight
 
     // Convert speed to PWM signal
-    if (vel > 0) {  // Forward motion
+    if (vel > 0) {  // Right motion
         motorPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
-    } else if (vel < 0) {  // Reverse motion
+    } else if (vel < 0) {  // Left motion
         motorPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
-    } else {  // Brake (no motion)
+    } else {  // Straight
         motorPWM = brakePWM;
     }
 }
