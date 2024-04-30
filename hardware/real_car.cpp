@@ -390,7 +390,7 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
         linear.x = 0 --> 1500000 nanoseconds  (brake)
         linear.x = 1 --> 1625000 nanoseconds  (max forward)
   */
-  velToPWM(normalizedSpeed, motorPWM,direction);
+  motorVelToPWM(normalizedSpeed, motorPWM,direction);
 
 // These commands publish to the topic seen and subscribed by the Pico
   motor_pub_->publishSpeed(motorPWM, direction);
@@ -398,7 +398,7 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   // Angle = -1 --> Duty Cycle of 1.0 ms
   // Angle = 0 --> Duty Cycle of 1.5 ms
   // Angle = 1 --> Duty Cycle of 2.0 ms  
-  velToPWM(normalizedAngle, servoPWM,direction);
+  servoVelToPWM(normalizedAngle, servoPWM);
 
   // These commands publish to the topic seen and subscribed by the Pico
   servo_pub_->publishAngle(servoPWM);
