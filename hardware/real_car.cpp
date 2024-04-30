@@ -41,10 +41,10 @@ HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPubMotor::publishSpeed(int speed)
+void HardwareCommandPubMotor::publishSpeed(int speed, string direction)
 {
   auto message = std_msgs::msg::String();
-  message.data = "Speed = " + std::to_string(speed);
+  message.data = std::to_string(speed) + " " + direction;
   motor_publisher_->publish(message);
 }
 
@@ -53,29 +53,48 @@ void HardwareCommandPubMotor::publishSpeed(int speed)
 void HardwareCommandPubServo::publishAngle(int angle)
 {
   auto message = std_msgs::msg::String();
-  message.data = "Angle = " + std::to_string(angle);
+  message.data = std::to_string(angle);
   servo_publisher_->publish(message);
 }
 
 
-
 // Function for converting twist.linear.x to PWM signals
-void RealCarHardware::velToPWM(double vel, int& motorPWM)
+void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, string& direction)
 {
-  // Define the mapping constants
-  double maxSpeed = 1.0;   // Maximum speed
-  int maxPWM = 1625000;       // Maximum PWM value (for max forward)
-  int minPWM = 1375000;       // Minimum PWM value (for max reverse)
-  int brakePWM = 1500000;     // PWM value for braking
+    // Define the mapping constants
+    double maxSpeed = 1.0;   // Maximum speed
+    int maxPWM = 2000000;    // Maximum PWM value (for max forward)
+    int minPWM = 1375000;    // Minimum PWM value (for motor off)
 
-  // Convert speed to PWM signal
-  if (vel > 0) {  // Forward motion
-      motorPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
-  } else if (vel < 0) {  // Reverse motion
-      motorPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
-  } else {  // Brake (no motion)
-      motorPWM = brakePWM;
-  }
+    // Convert speed to PWM signal
+    if (vel > 0) {  // Forward or Reverse motion
+        motorPWM = minPWM + static_cast<int>((vel) * (maxPWM - minPWM) / maxSpeed);
+        direction = "forward";
+    } else if (vel < 0) {  // Reverse motion
+        motorPWM = minPWM + static_cast<int>(std::abs(vel) * (maxPWM - minPWM) / maxSpeed);
+        direction = "reverse";
+    } else {  // No motion
+        motorPWM = minPWM;  // Motor is off
+        direction = "stop";
+    }
+}
+
+void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
+{
+    // Define the mapping constants
+    double maxSpeed = 1.0;   // Maximum speed
+    int maxPWM = 1625000;       // Maximum PWM value (for max forward)
+    int minPWM = 1375000;       // Minimum PWM value (for max reverse)
+    int brakePWM = 1500000;     // PWM value for braking
+
+    // Convert speed to PWM signal
+    if (vel > 0) {  // Forward motion
+        motorPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
+    } else if (vel < 0) {  // Reverse motion
+        motorPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
+    } else {  // Brake (no motion)
+        motorPWM = brakePWM;
+    }
 }
 
 
@@ -357,6 +376,7 @@ hardware_interface::return_type RealCarHardware::read(
 hardware_interface::return_type real_car ::RealCarHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
+    string direction;
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
@@ -370,17 +390,17 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
         linear.x = 0 --> 1500000 nanoseconds  (brake)
         linear.x = 1 --> 1625000 nanoseconds  (max forward)
   */
-  velToPWM(normalizedSpeed, motorPWM);
+  velToPWM(normalizedSpeed, motorPWM,direction);
 
-
+// These commands publish to the topic seen and subscribed by the Pico
+  motor_pub_->publishSpeed(motorPWM, direction);
 
   // Angle = -1 --> Duty Cycle of 1.0 ms
   // Angle = 0 --> Duty Cycle of 1.5 ms
   // Angle = 1 --> Duty Cycle of 2.0 ms  
-  velToPWM(normalizedAngle, servoPWM);
+  velToPWM(normalizedAngle, servoPWM,direction);
 
   // These commands publish to the topic seen and subscribed by the Pico
-  motor_pub_->publishSpeed(motorPWM);
   servo_pub_->publishAngle(servoPWM);
 
   return hardware_interface::return_type::OK;
