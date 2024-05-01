@@ -43,7 +43,7 @@ class HardwareCommandPubMotor : public rclcpp::Node
 {
   public:
     HardwareCommandPubMotor();
-    void publishSpeed(int speed,string direction);
+    void publishSpeed(int speed, std::string direction);
   private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr motor_publisher_;
 
@@ -143,7 +143,7 @@ public:
   //std::shared_ptr<HardwareCommandSub> hw_cmd_sub_;    //make the subscriber node a member
 
   // function defintion to convert normalized twist.linear.x to pwm
-  void motorVelToPWM(double vel, int& motorPWM, string& direction);
+  void motorVelToPWM(double vel, int& motorPWM, std::string& direction);
   void servoVelToPWM(double vel, int& servoPWM);
 
 private:

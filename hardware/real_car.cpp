@@ -41,7 +41,7 @@ HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPubMotor::publishSpeed(int speed, string direction)
+void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
 {
   auto message = std_msgs::msg::String();
   message.data = std::to_string(speed) + " " + direction;
@@ -59,7 +59,7 @@ void HardwareCommandPubServo::publishAngle(int angle)
 
 
 // Function for converting twist.linear.x to PWM signals
-void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, string& direction)
+void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& direction)
 {
     // Define the mapping constants
     double maxSpeed = 1.0;   // Maximum speed
@@ -376,7 +376,7 @@ hardware_interface::return_type RealCarHardware::read(
 hardware_interface::return_type real_car ::RealCarHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-    string direction;
+    std::string direction;
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
