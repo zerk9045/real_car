@@ -89,11 +89,11 @@ void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
 
     // Convert speed to PWM signal
     if (vel > 0) {  // Right motion
-        motorPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
+        servoPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
     } else if (vel < 0) {  // Left motion
-        motorPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
+        servoPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
     } else {  // Straight
-        motorPWM = brakePWM;
+        servoPWM = brakePWM;
     }
 }
 
