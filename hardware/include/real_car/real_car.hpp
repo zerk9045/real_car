@@ -60,8 +60,6 @@ class HardwareCommandSubPico : public rclcpp::Node
     double counts_;          // variable to store counts
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
 };
-};
-
 
 struct JointValue
 {
