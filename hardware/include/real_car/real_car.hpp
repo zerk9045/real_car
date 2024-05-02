@@ -1,16 +1,5 @@
-// Copyright 2021 ros2_control Development Team
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Created by Team 6 for EEC 195AB, Spring 2024
+// Adrien Salvador, Raphael Bret-Mounet, Gabriel Castellanos
 
 #ifndef REAL_CAR__CARLIKEBOT_SYSTEM_HPP_
 #define REAL_CAR__CARLIKEBOT_SYSTEM_HPP_
@@ -20,7 +9,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
 #include "hardware_interface/handle.hpp"
 #include "hardware_interface/hardware_info.hpp"
 #include "hardware_interface/system_interface.hpp"
@@ -60,29 +48,19 @@ class HardwareCommandPubServo : public rclcpp::Node
 
 };
 
-// This is the node definition for the subscriber that the Pico publishes to and Pi subscribes to
-// class HardwareCommandSub : public rclcpp::Node
-// {
-//   public:
-//     HardwareCommandSub() : Node("hardware_command_subscriber")
-//     {
-//       subscription_ = this->create_subscription<std_msgs::msg::String>("pi_subscribing_topic", 10,
-//         [this](const std_msgs::msg::String::SharedPtr msg) {
-//             // Callback function when message is received
-//             RCLCPP_INFO(this->get_logger(), "Received command: '%s'", msg->data.c_str());
-//             processMessage(msg->data);
-//         });
-//     }
+//This is the node definition for the subscriber that the Pico publishes to and Pi subscribes to
+class HardwareCommandSubPico : public rclcpp::Node
+{
+  public:
+    HardwareCommandSub();
+    void readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts);
+    double getCounts() const { return counts_; }
 
-// private:
-//     void processMessage(const std::string &message)
-//     {
-//       double currentSpeed = std::stod(message);
-//       hw_interfaces_["traction"].state.velocity = currentSpeed;
-//     }
-//     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-// };
-// };
+  private:
+    double counts_;          // variable to store counts
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
+};
+};
 
 
 struct JointValue
@@ -140,7 +118,7 @@ public:
 
   std::shared_ptr<HardwareCommandPubMotor> motor_pub_;    //make the publisher node a member
   std::shared_ptr<HardwareCommandPubServo> servo_pub_;    //make the publisher node a member  
-  //std::shared_ptr<HardwareCommandSub> hw_cmd_sub_;    //make the subscriber node a member
+  std::shared_ptr<HardwareCommandSubPico> pico_subscriber_;      //make the subscriber node a member
 
   // function defintion to convert normalized twist.linear.x to pwm
   void motorVelToPWM(double vel, int& motorPWM, std::string& direction);
@@ -149,7 +127,7 @@ public:
 private:
 
   // std::vector<std::tuple<std::string, double, double>>
-  //   hw_interfaces_;  // name of joint, state, command
+  // hw_interfaces_;  // name of joint, state, command
   std::map<std::string, Joint> hw_interfaces_;
   int motorPWM;
   int servoPWM;  

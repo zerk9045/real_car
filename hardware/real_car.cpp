@@ -1,19 +1,7 @@
-// Copyright 2021 ros2_control Development Team
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+// Created by Team 6 for EEC 195AB, Spring 2024
+// Adrien Salvador, Raphael Bret-Mounet, Gabriel Castellanos
 
 #include "real_car/real_car.hpp"
-
 #include <chrono>
 #include <cmath>
 #include <cstddef>
@@ -21,12 +9,24 @@
 #include <memory>
 #include <vector>
 #include <string>
-
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 namespace real_car
 {
+
+// Create the topic that the Pico will publish to and Pi will subscribe to
+HardwareCommandSubPico::HardwareCommandSubPico() : Node("pico_publisher")
+{
+  pico_subscriber_ = this->create_subscription<std_msgs::msg::String>("pico_publishing_topic", 10, std::bind(&HardwareCommandSubMotor::motorCallback, this, std::placeholders::_1));
+}
+
+void HardwareCommandSubPico::readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts)
+{
+  std::string incomingData = encoderCounts->data;     // assign the data from pico a temp variable
+  counts_ = std::stod(incomingData);                  // convert the incoming data from string to double
+}
+
 
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
@@ -48,7 +48,6 @@ void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
   motor_publisher_->publish(message);
 }
 
-
 // Function for publishing to the topic that the Pico will subscribe to
 void HardwareCommandPubServo::publishAngle(int angle)
 {
@@ -57,24 +56,23 @@ void HardwareCommandPubServo::publishAngle(int angle)
   servo_publisher_->publish(message);
 }
 
-
 // Function for converting twist.linear.x to PWM signals
 void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& direction)
 {
     // Define the mapping constants
-    double maxSpeed = 1.0;   // Maximum speed
-    int maxPWM = 2000000;    // Maximum PWM value (for max forward)
-    int minPWM = 1375000;    // Minimum PWM value (for motor off)
+    double maxSpeed = 1.0;      // Maximum speed
+    int maxPWM = 2000000;       // Maximum PWM value (for max forward)
+    int minPWM = 1375000;       // Minimum PWM value (for motor off)
 
     // Convert speed to PWM signal
-    if (vel > 0) {  // Forward or Reverse motion
+    if (vel > 0) {              // Forward or Reverse motion
         motorPWM = minPWM + static_cast<int>((vel) * (maxPWM - minPWM) / maxSpeed);
         direction = "forward";
-    } else if (vel < 0) {  // Reverse motion
+    } else if (vel < 0) {       // Reverse motion
         motorPWM = minPWM + static_cast<int>(std::abs(vel) * (maxPWM - minPWM) / maxSpeed);
         direction = "reverse";
-    } else {  // No motion
-        motorPWM = minPWM;  // Motor is off
+    } else {                    // No motion
+        motorPWM = minPWM;      // Motor is off
         direction = "stop";
     }
 }
@@ -82,23 +80,20 @@ void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& dire
 void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
 {
     // Define the mapping constants
-    double maxSpeed = 1.0;   // Maximum speed
+    double maxSpeed = 1.0;      // Maximum speed
     int maxPWM = 2000000;       // Maximum PWM value (for max left)
     int minPWM = 1000000;       // Minimum PWM value (for max right)
     int brakePWM = 1500000;     // PWM value for straight
 
     // Convert speed to PWM signal
-    if (vel > 0) {  // Right motion
+    if (vel > 0) {              // Right motion
         servoPWM = brakePWM + static_cast<int>(vel * (maxPWM - brakePWM) / maxSpeed);
-    } else if (vel < 0) {  // Left motion
+    } else if (vel < 0) {       // Left motion
         servoPWM = brakePWM - static_cast<int>(std::abs(vel) * (brakePWM - minPWM) / maxSpeed);
-    } else {  // Straight
+    } else {                    // Straight
         servoPWM = brakePWM;
     }
 }
-
-
-
 
 // Start of Hardware Interface Stuff
 hardware_interface::CallbackReturn RealCarHardware::on_init(
@@ -107,6 +102,8 @@ hardware_interface::CallbackReturn RealCarHardware::on_init(
 
   motor_pub_ = std::make_shared<HardwareCommandPubMotor>();
   servo_pub_ = std::make_shared<HardwareCommandPubServo>();
+  pico_subscriber_ = std::make_shared<HardwareCommandSubPico>();
+
   if (
     hardware_interface::SystemInterface::on_init(info) !=
     hardware_interface::CallbackReturn::SUCCESS)
@@ -265,8 +262,7 @@ std::vector<hardware_interface::StateInterface> RealCarHardware::export_state_in
   return state_interfaces;
 }
 
-std::vector<hardware_interface::CommandInterface>
-RealCarHardware::export_command_interfaces()
+std::vector<hardware_interface::CommandInterface> RealCarHardware::export_command_interfaces()
 {
   std::vector<hardware_interface::CommandInterface> command_interfaces;
 
@@ -356,8 +352,8 @@ hardware_interface::return_type RealCarHardware::read(
   // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2!!!!!!!!
 
   // test code
-
-
+  pico_subscriber_->readEncoder(std_msgs::msg::String::SharedPtr(new std_msgs::msg::String));
+  double countsReadFromPico = pico_subscriber_->getCounts();
   // test code
 
 
@@ -376,7 +372,8 @@ hardware_interface::return_type RealCarHardware::read(
 hardware_interface::return_type real_car ::RealCarHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-    std::string direction;
+  std::string direction;
+
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
@@ -384,15 +381,15 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
 
   /*  To convert to PWM signals that the Pico can use, let's assume the max speed we want
-      to go is 1/4th of the top speed. Also our max linear.x = 1 and min linear.x = -1.
+      is the top speed of the car, which is 35 mph = 15.5 m/s. Thus our max linear.x = 15.5 and min linear.x = -15.5.
       Therefore:
-        linear.x = -1 --> 1375000 nanoseconds (max reverse)
-        linear.x = 0 --> 1500000 nanoseconds  (brake)
-        linear.x = 1 --> 1625000 nanoseconds  (max forward)
+        linear.x = -15 --> 1.0 ms (max reverse)
+        linear.x = 0 --> 1.5 ms  (brake)
+        linear.x = 15 --> 2.0 ms  (max forward)
   */
   motorVelToPWM(normalizedSpeed, motorPWM,direction);
 
-// These commands publish to the topic seen and subscribed by the Pico
+  // These commands publish to the topic seen and subscribed by the Pico
   motor_pub_->publishSpeed(motorPWM, direction);
 
   // Angle = -1 --> Duty Cycle of 1.0 ms
