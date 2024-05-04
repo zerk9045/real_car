@@ -48,18 +48,18 @@ class HardwareCommandPubServo : public rclcpp::Node
 
 };
 
-//This is the node definition for the subscriber that the Pico publishes to and Pi subscribes to
-class HardwareCommandSubPico : public rclcpp::Node
-{
-  public:
-    HardwareCommandSub();
-    void readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts);
-    double getCounts() const { return counts_; }
+// //This is the node definition for the subscriber that the Pico publishes to and Pi subscribes to
+// class HardwareCommandSubPico : public rclcpp::Node
+// {
+//   public:
+//     HardwareCommandSub();
+//     void readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts);
+//     double getCounts() const { return counts_; }
 
-  private:
-    double counts_;          // variable to store counts
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
-};
+//   private:
+//     double counts_;          // variable to store counts
+//     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
+// };
 
 struct JointValue
 {
@@ -116,7 +116,7 @@ public:
 
   std::shared_ptr<HardwareCommandPubMotor> motor_pub_;    //make the publisher node a member
   std::shared_ptr<HardwareCommandPubServo> servo_pub_;    //make the publisher node a member  
-  std::shared_ptr<HardwareCommandSubPico> pico_subscriber_;      //make the subscriber node a member
+  // std::shared_ptr<HardwareCommandSubPico> pico_subscriber_;      //make the subscriber node a member
 
   // function defintion to convert normalized twist.linear.x to pwm
   void motorVelToPWM(double vel, int& motorPWM, std::string& direction);

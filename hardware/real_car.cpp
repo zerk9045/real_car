@@ -15,17 +15,17 @@
 namespace real_car
 {
 
-// Create the topic that the Pico will publish to and Pi will subscribe to
-HardwareCommandSubPico::HardwareCommandSubPico() : Node("pico_publisher")
-{
-  pico_subscriber_ = this->create_subscription<std_msgs::msg::String>("pico_publishing_topic", 10, std::bind(&HardwareCommandSubMotor::motorCallback, this, std::placeholders::_1));
-}
+// // Create the topic that the Pico will publish to and Pi will subscribe to
+// HardwareCommandSubPico::HardwareCommandSubPico() : Node("pico_publisher")
+// {
+//   pico_subscriber_ = this->create_subscription<std_msgs::msg::String>("pico_publishing_topic", 10, std::bind(&HardwareCommandSubMotor::motorCallback, this, std::placeholders::_1));
+// }
 
-void HardwareCommandSubPico::readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts)
-{
-  std::string incomingData = encoderCounts->data;     // assign the data from pico a temp variable
-  counts_ = std::stod(incomingData);                  // convert the incoming data from string to double
-}
+// void HardwareCommandSubPico::readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts)
+// {
+//   std::string incomingData = encoderCounts->data;     // assign the data from pico a temp variable
+//   counts_ = std::stod(incomingData);                  // convert the incoming data from string to double
+// }
 
 
 // Create the topic that the Pi will publish to and Pico will subscribe to
@@ -102,7 +102,7 @@ hardware_interface::CallbackReturn RealCarHardware::on_init(
 
   motor_pub_ = std::make_shared<HardwareCommandPubMotor>();
   servo_pub_ = std::make_shared<HardwareCommandPubServo>();
-  pico_subscriber_ = std::make_shared<HardwareCommandSubPico>();
+  // pico_subscriber_ = std::make_shared<HardwareCommandSubPico>();
 
   if (
     hardware_interface::SystemInterface::on_init(info) !=
@@ -346,14 +346,13 @@ hardware_interface::return_type RealCarHardware::read(
   hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity;
 
   // calculates the position of the rear wheels by adding the current motor velocity * the time it took since this function was last called. this is some sort of integration
-  double noise = 0.1; // Example noise level
-  hw_interfaces_["traction"].state.position += (hw_interfaces_["traction"].command.velocity + noise) * period.seconds();
+  hw_interfaces_["traction"].state.position += (hw_interfaces_["traction"].command.velocity) * period.seconds();
   
   // THIS CODE IS ONLY FOR SIMULATING IN RVIZ2!!!!!!!!
 
   // test code
-  pico_subscriber_->readEncoder(std_msgs::msg::String::SharedPtr(new std_msgs::msg::String));
-  double countsReadFromPico = pico_subscriber_->getCounts();
+  // pico_subscriber_->readEncoder(std_msgs::msg::String::SharedPtr(new std_msgs::msg::String));
+  // double countsReadFromPico = pico_subscriber_->getCounts();
   // test code
 
 
