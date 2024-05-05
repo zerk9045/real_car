@@ -18,13 +18,28 @@
 #include "rclcpp/duration.hpp"
 #include "rclcpp/macros.hpp"
 #include "rclcpp/time.hpp"
+#include <rclcpp/node.hpp>
+#include <rclcpp/publisher.hpp>
+#include <rclcpp/subscription.hpp>
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/float64.hpp"
 #include "real_car/visibility_control.h"
 
 namespace real_car
 {
+class HardwareCommandSubPico : public rclcpp::Node
+{
+  public:
+    HardwareCommandSubPico();
+    void subscriber_callback(const std_msgs::msg::String::SharedPtr msg);
+    std::string getLatestMessageData();
+  private:
+    std::string latest_message_data_; 
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
+
+};
 
 // This is the node definition for the publisher that the Pi publishes to and Pico subscribes to for motor speeds
 class HardwareCommandPubMotor : public rclcpp::Node
@@ -47,19 +62,6 @@ class HardwareCommandPubServo : public rclcpp::Node
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr servo_publisher_;
 
 };
-
-// //This is the node definition for the subscriber that the Pico publishes to and Pi subscribes to
-// class HardwareCommandSubPico : public rclcpp::Node
-// {
-//   public:
-//     HardwareCommandSub();
-//     void readEncoder(const std_msgs::msg::String::SharedPtr encoderCounts);
-//     double getCounts() const { return counts_; }
-
-//   private:
-//     double counts_;          // variable to store counts
-//     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
-// };
 
 struct JointValue
 {
@@ -116,13 +118,21 @@ public:
 
   std::shared_ptr<HardwareCommandPubMotor> motor_pub_;    //make the publisher node a member
   std::shared_ptr<HardwareCommandPubServo> servo_pub_;    //make the publisher node a member  
-  // std::shared_ptr<HardwareCommandSubPico> pico_subscriber_;      //make the subscriber node a member
-
+  std::shared_ptr<HardwareCommandSubPico> pico_subscriber_;
   // function defintion to convert normalized twist.linear.x to pwm
-  void motorVelToPWM(double vel, int& motorPWM, std::string& direction);
+  void motorVelToPWM(double vel, double normalizedAngle, int& motorPWM, std::string& direction);
   void servoVelToPWM(double vel, int& servoPWM);
-
+  double pwmToMotorVel(double receivedMotorPWM, std::string receivedMotorDirection);
+  double pwmToServoVel(double receivedServoPWM);
 private:
+
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motor_subscriber_;
+  rclcpp::Node::SharedPtr motor_node_;
+  std_msgs::msg::String motor_msg_;
+
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr servo_subscriber_;
+  rclcpp::Node::SharedPtr servo_node_;
+  std_msgs::msg::String servo_msg_;
 
   // std::vector<std::tuple<std::string, double, double>>
   // hw_interfaces_;  // name of joint, state, command
@@ -130,7 +140,9 @@ private:
   int motorPWM;
   int servoPWM;  
   double normalizedSpeed;
-  double normalizedAngle;  
+  double normalizedAngle;
+  double newNormalizedSpeed;
+  double newNormalizedAngle;  
   double speed2publish;
   double angle2publish;
 };
