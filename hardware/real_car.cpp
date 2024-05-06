@@ -445,14 +445,14 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
 {
   std::string direction;
 
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comVelocityBefore: '%f'", hw_interfaces_["traction"].command.velocity);
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comSteerBefore: '%f'", hw_interfaces_["steering"].command.position);
-  if (hw_interfaces_["traction"].command.velocity == 5.780000 && abs(hw_interfaces_["steering"].command.position) == 1.570796){
-    hw_interfaces_["traction"].command.velocity = 0.0;
-    hw_interfaces_["steering"].command.position = 0.0;
-  }
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comVelocityAfter: '%f'", hw_interfaces_["traction"].command.velocity);
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comSteerAfter: '%f'", hw_interfaces_["steering"].command.position);
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comVelocityBefore: '%f'", hw_interfaces_["traction"].command.velocity);
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comSteerBefore: '%f'", hw_interfaces_["steering"].command.position);
+  // if (hw_interfaces_["traction"].command.velocity == 5.780000 && abs(hw_interfaces_["steering"].command.position) == 1.570796){
+  //   hw_interfaces_["traction"].command.velocity = 0.0;
+  //   hw_interfaces_["steering"].command.position = 0.0;
+  // }
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comVelocityAfter: '%f'", hw_interfaces_["traction"].command.velocity);
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "comSteerAfter: '%f'", hw_interfaces_["steering"].command.position);
 
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
@@ -462,10 +462,10 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
 
   motorVelToPWM(normalizedSpeed, normalizedAngle, motorPWM, direction);
 
-  if (motorPWM == 1386653 && direction == "forward"){
-    motorPWM = 0;
-    direction = "stop";
-  }
+  // if (motorPWM == 1386653 && direction == "forward"){
+  //   motorPWM = 0;
+  //   direction = "stop";
+  // }
 
   motor_pub_->publishSpeed(motorPWM, direction);
 
