@@ -29,18 +29,6 @@
 
 namespace real_car
 {
-class HardwareCommandSubPico : public rclcpp::Node
-{
-  public:
-    HardwareCommandSubPico();
-    void subscriber_callback(const std_msgs::msg::String::SharedPtr msg);
-    std::string getLatestMessageData();
-  private:
-    std::string latest_message_data_; 
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pico_subscriber_;
-
-};
-
 // This is the node definition for the publisher that the Pi publishes to and Pico subscribes to for motor speeds
 class HardwareCommandPubMotor : public rclcpp::Node
 {
@@ -118,21 +106,21 @@ public:
 
   std::shared_ptr<HardwareCommandPubMotor> motor_pub_;    //make the publisher node a member
   std::shared_ptr<HardwareCommandPubServo> servo_pub_;    //make the publisher node a member  
-  std::shared_ptr<HardwareCommandSubPico> pico_subscriber_;
+
   // function defintion to convert normalized twist.linear.x to pwm
-  void motorVelToPWM(double vel, double normalizedAngle, int& motorPWM, std::string& direction);
+  void motorVelToPWM(double vel, int& motorPWM, std::string& direction);
   void servoVelToPWM(double vel, int& servoPWM);
-  double pwmToMotorVel(double receivedMotorPWM, std::string receivedMotorDirection);
-  double pwmToServoVel(double receivedServoPWM);
+  // double pwmToMotorVel(double receivedMotorPWM, std::string receivedMotorDirection);
+  // double pwmToServoVel(double receivedServoPWM);
 private:
 
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motor_subscriber_;
-  rclcpp::Node::SharedPtr motor_node_;
-  std_msgs::msg::String motor_msg_;
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motor_subscriber_;
+  // rclcpp::Node::SharedPtr motor_node_;
+  // std_msgs::msg::String motor_msg_;
 
-  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr servo_subscriber_;
-  rclcpp::Node::SharedPtr servo_node_;
-  std_msgs::msg::String servo_msg_;
+  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr servo_subscriber_;
+  // rclcpp::Node::SharedPtr servo_node_;
+  // std_msgs::msg::String servo_msg_;
 
   // std::vector<std::tuple<std::string, double, double>>
   // hw_interfaces_;  // name of joint, state, command
@@ -141,8 +129,8 @@ private:
   int servoPWM;  
   double normalizedSpeed;
   double normalizedAngle;
-  double newNormalizedSpeed;
-  double newNormalizedAngle;  
+  // double newNormalizedSpeed;
+  // double newNormalizedAngle;  
   double speed2publish;
   double angle2publish;
 };
