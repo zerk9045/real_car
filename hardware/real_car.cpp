@@ -407,9 +407,9 @@ hardware_interface::return_type RealCarHardware::read(
   // hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds();
 
 
-  hw_interfaces_["steering"].state.position = hw_interfaces_["steering"].command.position;
-  hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity;
-  hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds();
+  hw_interfaces_["steering"].state.position = hw_interfaces_["steering"].command.position; // Take in rads from pico
+  hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity; // Take in speed(m/s) from pico
+  hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds(); // Update position based on speed in meters
 
  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "state.position: '%f'", hw_interfaces_["steering"].state.position);
  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "state.velocity: '%f'", hw_interfaces_["traction"].state.velocity);
