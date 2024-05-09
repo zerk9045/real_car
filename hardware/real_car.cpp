@@ -31,7 +31,7 @@ HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
   servo_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_servo_publishing_topic", 10);
     timer_ = this->create_wall_timer(
-            70ms, std::bind(&HardwareCommandPubMotor::timer_callback, this));
+            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
