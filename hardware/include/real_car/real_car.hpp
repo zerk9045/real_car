@@ -51,6 +51,17 @@ class HardwareCommandPubServo : public rclcpp::Node
 
 };
 
+// This is the node definition for the subscriber that the Pico subscribes to for motor speeds and servo
+class HardwareCommandSubMotorServo : public rclcpp::Node
+{
+  public:
+    HardwareCommandSubMotorServo();
+    void servo_motor_callback(const std_msgs::msg::String::SharedPtr msg);
+  private:
+    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motor_servo_subscriber_;
+};
+
+
 struct JointValue
 {
   double position{0.0};
@@ -112,6 +123,7 @@ public:
   void servoVelToPWM(double vel, int& servoPWM);
   // double pwmToMotorVel(double receivedMotorPWM, std::string receivedMotorDirection);
   // double pwmToServoVel(double receivedServoPWM);
+
 private:
 
   // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motor_subscriber_;
@@ -133,6 +145,7 @@ private:
   // double newNormalizedAngle;  
   double speed2publish;
   double angle2publish;
+
 };
 
 }  // namespace real_car

@@ -13,10 +13,11 @@
 #include <sstream>
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
+double feedbackSpeed;
+double feedbackAngle;
 
 namespace real_car
 {
-
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 {
@@ -43,6 +44,33 @@ void HardwareCommandPubServo::publishAngle(int angle)
   auto message = std_msgs::msg::String();
   message.data = std::to_string(angle);
   servo_publisher_->publish(message);
+}
+//Create the subscriber
+ HardwareCommandSubMotorServo::HardwareCommandSubMotorServo() : Node("motor_servo_subscriber")
+{
+    motor_subscriber_ = this->create_subscription<std_msgs::msg::String>(
+       "control_topic", rclcpp::SensorDataQoS(),
+       [this](const std_msgs::msg::String::SharedPtr msg) { servo_motor_callback(msg); });
+}
+
+ //Callback function for the subscriber
+void HardwareCommandSubMotorServo::servo_motor_callback(const std_msgs::msg::String::SharedPtr msg)
+{
+    RCLCPP_INFO(this->get_logger(), "I heard: '%s'", msg->data.c_str());
+    std::string msg_data = msg->data.c_str();
+
+    //Message format: "angle speed"
+
+    // Find the position of the space character
+    size_t space_pos = msg_data.find(' ');
+    if (space_pos == std::string::npos) {
+        // Invalid message format, handle error or return
+        return;
+    }
+
+    // Extract motor speed and servo angle
+    feedbackAngle = std::stod(msg_data.substr(0, space_pos));
+    feedbackSpeed = std::stod(msg_data.substr(space_pos + 1));
 }
 
 // Function for converting twist.linear.x to PWM signals
@@ -84,59 +112,11 @@ void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
     }
 }
 
-// double RealCarHardware::pwmToMotorVel(double receivedMotorPWM, std::string receivedMotorDirection)
-// {
-//     double maxSpeed = 15.5;     // Maximum speed
-//     int maxPWM = 2000000;       // Maximum PWM value (for max forward)
-//     int minPWM = 1375000;       // Minimum PWM value (for motor off)
-
-//     double newNormalizedSpeed;
-
-//     if (receivedMotorDirection == "forward") {
-//         newNormalizedSpeed = static_cast<double>(receivedMotorPWM - minPWM) / static_cast<double>(maxPWM - minPWM) * maxSpeed;
-//     } else if (receivedMotorDirection == "reverse") {
-//         newNormalizedSpeed = -static_cast<double>(receivedMotorPWM - minPWM) / static_cast<double>(maxPWM - minPWM) * maxSpeed;
-//     } else {
-//         newNormalizedSpeed = 0.0;
-//     }
-
-//     return newNormalizedSpeed;
-// }
-
-// double RealCarHardware::pwmToServoVel(double receivedServoPWM)
-// {
-//     double maxSpeed = 1.0;      // Maximum speed
-//     int maxPWM = 2000000;       // Maximum PWM value (for max left)
-//     int minPWM = 1000000;       // Minimum PWM value (for max right)
-//     int brakePWM = 1500000;     // PWM value for straight
-
-//     double newNormalizedAngle;
-
-//     if (receivedServoPWM > brakePWM) {  // Right motion
-//         newNormalizedAngle = static_cast<double>(receivedServoPWM - brakePWM) / static_cast<double>(maxPWM - brakePWM) * maxSpeed;
-//     } else if (receivedServoPWM < brakePWM) { // Left motion
-//         newNormalizedAngle = static_cast<double>(receivedServoPWM - brakePWM) / static_cast<double>(brakePWM - minPWM) * maxSpeed;
-//     } else {
-//         newNormalizedAngle = 0.0;
-//     }
-
-//     return newNormalizedAngle;
-// }
 
 // Start of Hardware Interface Stuff
 hardware_interface::CallbackReturn RealCarHardware::on_init(const hardware_interface::HardwareInfo & info)
 {
-
-  // motor_node_ = rclcpp::Node::make_shared("motor_node");
-  // motor_subscriber_ = motor_node_->create_subscription<std_msgs::msg::String>(
-  //     "pi_motor_publishing_topic", rclcpp::SensorDataQoS(),
-  //     [this](const std_msgs::msg::String::SharedPtr motormessage) { motor_msg_ = *motormessage; });
-
-  // servo_node_ = rclcpp::Node::make_shared("servo_node");
-  // servo_subscriber_ = servo_node_->create_subscription<std_msgs::msg::String>(
-  //     "pi_servo_publishing_topic", rclcpp::SensorDataQoS(),
-  //     [this](const std_msgs::msg::String::SharedPtr servomessage) { servo_msg_ = *servomessage; });
-
+  motor_subscriber_ = std::make_shared<HardwareCommandSubMotorServo>();
 
   motor_pub_ = std::make_shared<HardwareCommandPubMotor>();
   servo_pub_ = std::make_shared<HardwareCommandPubServo>();
@@ -374,42 +354,10 @@ hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
 hardware_interface::return_type RealCarHardware::read(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
-  // if (rclcpp::ok())
-  // {
-  //   rclcpp::spin_some(motor_node_);
-  //   rclcpp::spin_some(servo_node_);
-  // }
 
-  // const char* motor_msg_data = motor_msg_.data.c_str();
-  // const char* space_pos = std::strchr(motor_msg_data, ' ');
-  // std::ptrdiff_t length = space_pos - motor_msg_data;
-  // char* endptr;
-  // double receivedMotorPWM = std::strtod(motor_msg_data, &endptr);
-  // std::string receivedMotorDirection(endptr + 1);
-  // //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor message from pico: '%f'", receivedMotorPWM);
-  // //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor message from pico: '%s'", receivedMotorDirection.c_str());
-  
-  // const char* servo_msg_data = servo_msg_.data.c_str();
-  // const char* space_pos1 = std::strchr(servo_msg_data, ' ');
-  // std::ptrdiff_t length1 = space_pos1 - servo_msg_data;
-  // char* endptr1;
-  // double receivedServoPWM = std::strtod(servo_msg_data, &endptr1);
-  // //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo message from pico: '%f'", receivedServoPWM);
-
-  // double newNormalizedSpeed = pwmToMotorVel(receivedMotorPWM, receivedMotorDirection);
-  // double newNormalizedAngle = pwmToServoVel(receivedServoPWM);
-
-  //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "newNormalizedSpeed: '%f'", newNormalizedSpeed);
-  //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "newNormalizedAngle: '%f'", newNormalizedAngle);
-
-  // hw_interfaces_["steering"].state.position = newNormalizedAngle * 3.141592 / 2;
-  // hw_interfaces_["traction"].state.velocity = (newNormalizedSpeed*20);
-  // hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds();
-
-
-  hw_interfaces_["steering"].state.position = hw_interfaces_["steering"].command.position; // Take in rads from pico
-  hw_interfaces_["traction"].state.velocity = hw_interfaces_["traction"].command.velocity; // Take in speed(m/s) from pico
-  hw_interfaces_["traction"].state.position += hw_interfaces_["traction"].state.velocity * period.seconds(); // Update position based on speed in meters
+  hw_interfaces_["steering"].state.position = feedbackAngle; // Take in rads from pico
+  hw_interfaces_["traction"].state.velocity = feedbackSpeed; // Take in speed(m/s) from pico
+  hw_interfaces_["traction"].state.position += feedbackSpeed * period.seconds(); // Update position based on speed in meters
 
  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "state.position: '%f'", hw_interfaces_["steering"].state.position);
  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "state.velocity: '%f'", hw_interfaces_["traction"].state.velocity);
