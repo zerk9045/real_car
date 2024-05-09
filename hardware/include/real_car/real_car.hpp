@@ -121,18 +121,12 @@ public:
   // function defintion to convert normalized twist.linear.x to pwm
   void motorVelToPWM(double vel, int& motorPWM, std::string& direction);
   void servoVelToPWM(double vel, int& servoPWM);
-  // double pwmToMotorVel(double receivedMotorPWM, std::string receivedMotorDirection);
-  // double pwmToServoVel(double receivedServoPWM);
-
+  
 private:
 
-  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr motor_subscriber_;
-  // rclcpp::Node::SharedPtr motor_node_;
-  // std_msgs::msg::String motor_msg_;
-
-  // rclcpp::Subscription<std_msgs::msg::String>::SharedPtr servo_subscriber_;
-  // rclcpp::Node::SharedPtr servo_node_;
-  // std_msgs::msg::String servo_msg_;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr pi_subscriber_;
+  rclcpp::Node::SharedPtr pi_subscriber_node_;
+  std_msgs::msg::String incoming_msg_;
 
   // std::vector<std::tuple<std::string, double, double>>
   // hw_interfaces_;  // name of joint, state, command
@@ -141,8 +135,8 @@ private:
   int servoPWM;  
   double normalizedSpeed;
   double normalizedAngle;
-  // double newNormalizedSpeed;
-  // double newNormalizedAngle;  
+  double newNormalizedSpeed;
+  double newNormalizedAngle;  
   double speed2publish;
   double angle2publish;
 
