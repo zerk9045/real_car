@@ -360,7 +360,7 @@ hardware_interface::return_type RealCarHardware::read(
 
   // close the feedback loop
   hw_interfaces_["steering"].state.position = feedbackAngle; // Take in rads from pico
-  hw_interfaces_["traction"].state.velocity = feedbackSpeed; // Take in speed(m/s) from pico
+  hw_interfaces_["traction"].state.velocity = feedbackSpeed*20; // Take in speed(m/s) from pico
   hw_interfaces_["traction"].state.position += feedbackSpeed * period.seconds(); // Update position based on speed in meters
 
   return hardware_interface::return_type::OK;
