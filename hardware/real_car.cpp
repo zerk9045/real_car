@@ -55,7 +55,7 @@ void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& dire
 {
     // Define the mapping constants
     double maxSpeed = 15.0;     // Maximum speed
-    int maxPWM = 2000000;       // Maximum PWM value (for max forward)
+    int maxPWM = 3000000;       // Maximum PWM value (for max forward)
     int minPWM = 1375000;       // Minimum PWM value (for motor off)
 
     // Convert speed to PWM signal
@@ -355,13 +355,13 @@ hardware_interface::return_type RealCarHardware::read(
   double feedbackSpeed = std::strtod(endptr + 1, nullptr);
 
   // echo the feedbackAngle and feedbackSpeed
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
 
   // close the feedback loop
-  hw_interfaces_["steering"].state.position = feedbackAngle; // Take in rads from pico
+  hw_interfaces_["steering"].state.position = feedbackAngle/90; // Take in rads from pico
   hw_interfaces_["traction"].state.velocity = feedbackSpeed*20; // Take in speed(m/s) from pico
-  hw_interfaces_["traction"].state.position += feedbackSpeed * period.seconds(); // Update position based on speed in meters
+  hw_interfaces_["traction"].state.position += feedbackSpeed *20* period.seconds(); // Update position based on speed in meters
 
   return hardware_interface::return_type::OK;
 }
@@ -370,6 +370,8 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
   std::string direction;
+
+  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["traction"].command.velocity);
 
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
@@ -381,10 +383,10 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   motorVelToPWM(normalizedSpeed, motorPWM, direction);
 
   // make sure when servo at full tilt, the car does not move forward or backward
-  if (servoPWM == 2000000 || servoPWM == 1000000){
-    //motorPWM = 0;
-    direction = "stop";
-  }
+  // if (servoPWM == 2000000 || servoPWM == 1000000){
+  //   //motorPWM = 0;
+  //   direction = "stop";
+  // }
 
   // publish the motor PWM and direction
   motor_pub_->publishSpeed(motorPWM, direction);
