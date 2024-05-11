@@ -2,7 +2,7 @@ This repo contains the hardware interface needed for ros_control communication b
 ### Running the MicroROS Agent
 On the Pi, run the following commands to start the MicroROS Agent:
 ```bash 
-    cd /home/robot_ws/microros_ws
+    cd robot_ws/micorros_ws
     
     source /opt/ros/humble/setup.bash && source install/local_setup.bash
     
