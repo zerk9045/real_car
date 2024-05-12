@@ -357,11 +357,12 @@ hardware_interface::return_type RealCarHardware::read(
   // echo the feedbackAngle and feedbackSpeed
   // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
+  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Value to feed into state velocity: '%f'", feedbackSpeed*10);
 
   // close the feedback loop
   hw_interfaces_["steering"].state.position = feedbackAngle/90; // Take in rads from pico
-  hw_interfaces_["traction"].state.velocity = feedbackSpeed*20; // Take in speed(m/s) from pico
-  hw_interfaces_["traction"].state.position += feedbackSpeed *20* period.seconds(); // Update position based on speed in meters
+  hw_interfaces_["traction"].state.velocity = feedbackSpeed*10; // Take in speed(m/s) from pico
+  hw_interfaces_["traction"].state.position += feedbackSpeed *10* period.seconds(); // Update position based on speed in meters
 
   return hardware_interface::return_type::OK;
 }
@@ -371,13 +372,18 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
 {
   std::string direction;
 
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["traction"].command.velocity);
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["traction"].command.velocity);
 
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["steering"].command.position);
+
   // This somehow returns the same value as the TwistMsg sent
   normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
+
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "normalized: '%f'", normalizedAngle);
+
 
   // convert normalizedSpeed into a PWM and direction
   motorVelToPWM(normalizedSpeed, motorPWM, direction);
