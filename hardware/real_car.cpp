@@ -22,16 +22,12 @@ namespace real_car
 HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 {
   motor_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_motor_publishing_topic", 10);
-//    timer_ = this->create_wall_timer(
-//        70ms, std::bind(&HardwareCommandPubMotor::timer_callback, this));
 }
 
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
   servo_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_servo_publishing_topic", 10);
-//    timer_ = this->create_wall_timer(
-//            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
@@ -297,8 +293,7 @@ std::vector<hardware_interface::CommandInterface> RealCarHardware::export_comman
   return command_interfaces;
 }
 
-hardware_interface::CallbackReturn RealCarHardware::on_activate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+hardware_interface::CallbackReturn RealCarHardware::on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Activating ...please wait...");
 
@@ -324,8 +319,7 @@ hardware_interface::CallbackReturn RealCarHardware::on_activate(
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+hardware_interface::CallbackReturn RealCarHardware::on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Deactivating ...please wait...");
   // I don't think we ever disconnect/deactivate this hardware interface
@@ -335,8 +329,7 @@ hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-hardware_interface::return_type RealCarHardware::read(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
+hardware_interface::return_type RealCarHardware::read(const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   // spin the subscriber node
   if (rclcpp::ok())
