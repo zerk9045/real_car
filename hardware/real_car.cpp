@@ -348,9 +348,9 @@ hardware_interface::return_type RealCarHardware::read(const rclcpp::Time & /*tim
   double feedbackSpeed = std::strtod(endptr + 1, nullptr);
 
   // echo the feedbackAngle and feedbackSpeed
-  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Value to feed into state velocity: '%f'", feedbackSpeed*10);
+  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
+  //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
+  //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Value to feed into state velocity: '%f'", feedbackSpeed*10);
 
   // close the feedback loop
   hw_interfaces_["steering"].state.position = feedbackAngle/90; // Take in rads from pico
