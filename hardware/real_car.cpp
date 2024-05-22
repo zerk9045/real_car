@@ -54,7 +54,7 @@ void HardwareCommandPubServo::publishAngle(int angle)
 void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& direction)
 {
     // Define the mapping constants
-    double maxSpeed = 15.0;     // Maximum speed
+    double maxSpeed = 1.0;     // Maximum speed
     int maxPWM = 2000000;       // Maximum PWM value (for max forward)
     int minPWM = 1375000;       // Minimum PWM value (for motor off)
 
