@@ -45,8 +45,8 @@ void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
 // Function for publishing to the topic that the Pico will subscribe to
 void HardwareCommandPubServo::publishAngle(int angle)
 {
-  auto message = std_msgs::msg::String();
-  message.data = std::to_string(angle);
+  auto message = std_msgs::msg::Int32();
+  message.data = angle;
   servo_publisher_->publish(message);
 }
 
