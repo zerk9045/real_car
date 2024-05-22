@@ -55,7 +55,7 @@ void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& dire
 {
     // Define the mapping constants
     double maxSpeed = 15.0;     // Maximum speed
-    int maxPWM = 3000000;       // Maximum PWM value (for max forward)
+    int maxPWM = 2000000;       // Maximum PWM value (for max forward)
     int minPWM = 1375000;       // Minimum PWM value (for motor off)
 
     // Convert speed to PWM signal
