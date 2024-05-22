@@ -13,8 +13,6 @@
 #include <sstream>
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
-#include "std_msgs/msg/int32.hpp"
-
 double feedbackSpeed;
 double feedbackAngle;
 
@@ -31,7 +29,9 @@ HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
-    servo_publisher_ = this->create_publisher<std_msgs::msg::Int32>("pi_servo_publishing_topic", 10);
+  servo_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_servo_publishing_topic", 10);
+//    timer_ = this->create_wall_timer(
+//            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
@@ -45,9 +45,9 @@ void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
 // Function for publishing to the topic that the Pico will subscribe to
 void HardwareCommandPubServo::publishAngle(int angle)
 {
-    auto message = std_msgs::msg::Int32();
-    message.data = angle;
-    servo_publisher_->publish(message);
+  auto message = std_msgs::msg::String();
+  message.data = std::to_string(angle);
+  servo_publisher_->publish(message);
 }
 
 // Function for converting twist.linear.x to PWM signals
@@ -297,8 +297,7 @@ std::vector<hardware_interface::CommandInterface> RealCarHardware::export_comman
   return command_interfaces;
 }
 
-hardware_interface::CallbackReturn RealCarHardware::on_activate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+hardware_interface::CallbackReturn RealCarHardware::on_activate(const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Activating ...please wait...");
 
@@ -324,8 +323,7 @@ hardware_interface::CallbackReturn RealCarHardware::on_activate(
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
-  const rclcpp_lifecycle::State & /*previous_state*/)
+hardware_interface::CallbackReturn RealCarHardware::on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Deactivating ...please wait...");
   // I don't think we ever disconnect/deactivate this hardware interface
@@ -335,8 +333,7 @@ hardware_interface::CallbackReturn RealCarHardware::on_deactivate(
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
-hardware_interface::return_type RealCarHardware::read(
-  const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
+hardware_interface::return_type RealCarHardware::read(const rclcpp::Time & /*time*/, const rclcpp::Duration & period)
 {
   // spin the subscriber node
   if (rclcpp::ok())
@@ -356,12 +353,12 @@ hardware_interface::return_type RealCarHardware::read(
 
   // echo the feedbackAngle and feedbackSpeed
   // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
+  //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
 
   // close the feedback loop
   hw_interfaces_["steering"].state.position = feedbackAngle/90; // Take in rads from pico
-  hw_interfaces_["traction"].state.velocity = feedbackSpeed*20; // Take in speed(m/s) from pico
-  hw_interfaces_["traction"].state.position += feedbackSpeed *20* period.seconds(); // Update position based on speed in meters
+  hw_interfaces_["traction"].state.velocity = feedbackSpeed*10; // Take in speed(m/s) from pico
+  hw_interfaces_["traction"].state.position += feedbackSpeed *10* period.seconds(); // Update position based on speed in meters
 
   return hardware_interface::return_type::OK;
 }
@@ -371,13 +368,18 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
 {
   std::string direction;
 
-  RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["traction"].command.velocity);
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["traction"].command.velocity);
 
   // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
 
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["steering"].command.position);
+
   // This somehow returns the same value as the TwistMsg sent
   normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
+
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "normalized: '%f'", normalizedAngle);
+
 
   // convert normalizedSpeed into a PWM and direction
   motorVelToPWM(normalizedSpeed, motorPWM, direction);
