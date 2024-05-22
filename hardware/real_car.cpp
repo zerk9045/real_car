@@ -13,6 +13,8 @@
 #include <sstream>
 #include "hardware_interface/types/hardware_interface_type_values.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/int32.hpp"
+
 double feedbackSpeed;
 double feedbackAngle;
 
@@ -29,9 +31,7 @@ HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
-  servo_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_servo_publishing_topic", 10);
-//    timer_ = this->create_wall_timer(
-//            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
+    servo_publisher_ = this->create_publisher<std_msgs::msg::Int32>("pi_servo_publishing_topic", 10);
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
@@ -45,9 +45,9 @@ void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
 // Function for publishing to the topic that the Pico will subscribe to
 void HardwareCommandPubServo::publishAngle(int angle)
 {
-  auto message = std_msgs::msg::String();
-  message.data = std::to_string(angle);
-  servo_publisher_->publish(message);
+    auto message = std_msgs::msg::Int32();
+    message.data = angle;
+    servo_publisher_->publish(message);
 }
 
 // Function for converting twist.linear.x to PWM signals

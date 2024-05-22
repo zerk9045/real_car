@@ -26,6 +26,7 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/float64.hpp"
 #include "real_car/visibility_control.h"
+#include "std_msgs/msg/int32.hpp"
 
 namespace real_car
 {
@@ -47,8 +48,7 @@ class HardwareCommandPubServo : public rclcpp::Node
     HardwareCommandPubServo();
     void publishAngle(int angle);
   private:
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr servo_publisher_;
-
+    rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr servo_publisher_;
 };
 
 // This is the node definition for the subscriber that the Pico subscribes to for motor speeds and servo
