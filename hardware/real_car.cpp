@@ -29,7 +29,7 @@ HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
-  servo_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_servo_publishing_topic", 10);
+  servo_publisher_ = this->create_publisher<std_msgs::msg::Int32>("pi_servo_publishing_topic", 10);
 //    timer_ = this->create_wall_timer(
 //            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
 }
@@ -45,8 +45,8 @@ void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
 // Function for publishing to the topic that the Pico will subscribe to
 void HardwareCommandPubServo::publishAngle(int angle)
 {
-  auto message = std_msgs::msg::String();
-  message.data = std::to_string(angle);
+  auto message = std_msgs::msg::Int32();
+  message.data = angle;
   servo_publisher_->publish(message);
 }
 
