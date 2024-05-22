@@ -35,7 +35,7 @@ class HardwareCommandPubMotor : public rclcpp::Node
 {
   public:
     HardwareCommandPubMotor();
-    void publishSpeed(int speed, std::string direction);
+    void publishSpeed(double speed, std::string direction);
   private:
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr motor_publisher_;
 

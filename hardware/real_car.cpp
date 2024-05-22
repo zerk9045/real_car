@@ -35,7 +35,7 @@ HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPubMotor::publishSpeed(int speed, std::string direction)
+void HardwareCommandPubMotor::publishSpeed(double speed, std::string direction)
 {
   auto message = std_msgs::msg::String();
   message.data = std::to_string(speed) + " " + direction;
