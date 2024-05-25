@@ -22,16 +22,12 @@ namespace real_car
 HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 {
   motor_publisher_ = this->create_publisher<std_msgs::msg::Float32>("pi_motor_publishing_topic", 10);
-//    timer_ = this->create_wall_timer(
-//        70ms, std::bind(&HardwareCommandPubMotor::timer_callback, this));
 }
 
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
   servo_publisher_ = this->create_publisher<std_msgs::msg::Int32>("pi_servo_publishing_topic", 10);
-//    timer_ = this->create_wall_timer(
-//            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
@@ -50,27 +46,7 @@ void HardwareCommandPubServo::publishAngle(int angle)
   servo_publisher_->publish(message);
 }
 
-// Function for converting twist.linear.x to PWM signals
-void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& direction)
-{
-    // Define the mapping constants
-    double maxSpeed = 1.0;     // Maximum speed
-    int maxPWM = 2000000;       // Maximum PWM value (for max forward)
-    int minPWM = 1375000;       // Minimum PWM value (for motor off)
-
-    // Convert speed to PWM signal
-    if (vel > 0) {              // Forward or Reverse motion
-        motorPWM = minPWM + static_cast<int>((vel) * (maxPWM - minPWM) / maxSpeed);
-        direction = "forward";
-    } else if (vel < 0) {       // Reverse motion
-        motorPWM = minPWM + static_cast<int>(std::abs(vel) * (maxPWM - minPWM) / maxSpeed);
-        direction = "reverse";
-    } else {                    // No motion
-        motorPWM = minPWM;      // Motor is off
-        direction = "stop";
-    }      
-}
-
+// Function for converting twist.angular.z to PWM
 void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
 {
     // Define the mapping constants
