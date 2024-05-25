@@ -27,6 +27,7 @@
 #include "std_msgs/msg/float64.hpp"
 #include "real_car/visibility_control.h"
 #include "std_msgs/msg/int32.hpp"
+#include "std_msgs/msg/float32.hpp"
 
 namespace real_car
 {
@@ -35,9 +36,9 @@ class HardwareCommandPubMotor : public rclcpp::Node
 {
   public:
     HardwareCommandPubMotor();
-    void publishSpeed(double speed, std::string direction);
+    void publishSpeed(double speed);
   private:
-    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr motor_publisher_;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr motor_publisher_;
 
 };
 

@@ -21,7 +21,7 @@ namespace real_car
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 {
-  motor_publisher_ = this->create_publisher<std_msgs::msg::String>("pi_motor_publishing_topic", 10);
+  motor_publisher_ = this->create_publisher<std_msgs::msg::Float32>("pi_motor_publishing_topic", 10);
 //    timer_ = this->create_wall_timer(
 //        70ms, std::bind(&HardwareCommandPubMotor::timer_callback, this));
 }
@@ -35,10 +35,10 @@ HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPubMotor::publishSpeed(double speed, std::string direction)
+void HardwareCommandPubMotor::publishSpeed(double speed)
 {
-  auto message = std_msgs::msg::String();
-  message.data = std::to_string(speed) + " " + direction;
+  auto message = std_msgs::msg::Float32();
+  message.data = speed;
   motor_publisher_->publish(message);
 }
 
