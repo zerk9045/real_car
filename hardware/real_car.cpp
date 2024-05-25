@@ -391,7 +391,7 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   // }
 
   // publish the motor PWM and direction
-  motor_pub_->publishSpeed(normalizedSpeed, direction);
+  motor_pub_->publishSpeed(normalizedSpeed);
 
   // convert the normalizedAngle into servo PWM
   servoVelToPWM(normalizedAngle, servoPWM);
