@@ -22,16 +22,20 @@ namespace real_car
 HardwareCommandPubMotor::HardwareCommandPubMotor() : Node("motor_publisher")
 {
   motor_publisher_ = this->create_publisher<std_msgs::msg::Float32>("pi_motor_publishing_topic", 10);
+//    timer_ = this->create_wall_timer(
+//        70ms, std::bind(&HardwareCommandPubMotor::timer_callback, this));
 }
 
 // Create the topic that the Pi will publish to and Pico will subscribe to
 HardwareCommandPubServo::HardwareCommandPubServo() : Node("servo_publisher")
 {
   servo_publisher_ = this->create_publisher<std_msgs::msg::Int32>("pi_servo_publishing_topic", 10);
+//    timer_ = this->create_wall_timer(
+//            70ms, std::bind(&HardwareCommandPubServo::timer_callback, this));
 }
 
 // Function for publishing to the topic that the Pico will subscribe to
-void HardwareCommandPubMotor::publishSpeed(float speed)
+void HardwareCommandPubMotor::publishSpeed(double speed)
 {
   auto message = std_msgs::msg::Float32();
   message.data = speed;
@@ -46,7 +50,27 @@ void HardwareCommandPubServo::publishAngle(int angle)
   servo_publisher_->publish(message);
 }
 
-// Function for converting twist.angular.z to PWM
+// Function for converting twist.linear.x to PWM signals
+void RealCarHardware::motorVelToPWM(double vel, int& motorPWM, std::string& direction)
+{
+    // Define the mapping constants
+    double maxSpeed = 1.0;     // Maximum speed
+    int maxPWM = 2000000;       // Maximum PWM value (for max forward)
+    int minPWM = 1375000;       // Minimum PWM value (for motor off)
+
+    // Convert speed to PWM signal
+    if (vel > 0) {              // Forward or Reverse motion
+        motorPWM = minPWM + static_cast<int>((vel) * (maxPWM - minPWM) / maxSpeed);
+        direction = "forward";
+    } else if (vel < 0) {       // Reverse motion
+        motorPWM = minPWM + static_cast<int>(std::abs(vel) * (maxPWM - minPWM) / maxSpeed);
+        direction = "reverse";
+    } else {                    // No motion
+        motorPWM = minPWM;      // Motor is off
+        direction = "stop";
+    }      
+}
+
 void RealCarHardware::servoVelToPWM(double vel, int& servoPWM)
 {
     // Define the mapping constants
@@ -295,13 +319,17 @@ hardware_interface::CallbackReturn RealCarHardware::on_activate(const rclcpp_lif
   }
 
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Successfully activated!");
+
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
 hardware_interface::CallbackReturn RealCarHardware::on_deactivate(const rclcpp_lifecycle::State & /*previous_state*/)
 {
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Deactivating ...please wait...");
+  // I don't think we ever disconnect/deactivate this hardware interface
+  // so this is left blank besides the print outs
   RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Successfully deactivated!");
+
   return hardware_interface::CallbackReturn::SUCCESS;
 }
 
@@ -323,6 +351,10 @@ hardware_interface::return_type RealCarHardware::read(const rclcpp::Time & /*tim
   double feedbackAngle = std::strtod(incoming_msg_data, &endptr);
   double feedbackSpeed = std::strtod(endptr + 1, nullptr);
 
+  // echo the feedbackAngle and feedbackSpeed
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received servo angle from pico: '%f'", feedbackAngle); 
+  //RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "Received motor speed from pico: '%f'", feedbackSpeed);
+
   // close the feedback loop
   hw_interfaces_["steering"].state.position = feedbackAngle/90; // Take in rads from pico
   hw_interfaces_["traction"].state.velocity = feedbackSpeed*20; // Take in speed(m/s) from pico
@@ -336,13 +368,29 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
 {
   std::string direction;
 
-  // NO LONGER USED: Dividing by 20 will return the same value as the TwistMsg sent
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["traction"].command.velocity);
+
+  // Dividing by 20 will return the same value as the TwistMsg sent
   normalizedSpeed = hw_interfaces_["traction"].command.velocity / 20;
+
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "command: '%f'", hw_interfaces_["steering"].command.position);
 
   // This somehow returns the same value as the TwistMsg sent
   normalizedAngle = hw_interfaces_["steering"].command.position / 3.141592 * 2;
 
-  // publish the command velocity to the pico
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "normalized: '%f'", normalizedAngle);
+
+
+  // convert normalizedSpeed into a PWM and direction
+  motorVelToPWM(normalizedSpeed, motorPWM, direction);
+
+  // make sure when servo at full tilt, the car does not move forward or backward
+  // if (servoPWM == 2000000 || servoPWM == 1000000){
+  //   //motorPWM = 0;
+  //   direction = "stop";
+  // }
+
+  // publish the motor PWM and direction
   motor_pub_->publishSpeed(hw_interfaces_["traction"].command.velocity);
 
   // convert the normalizedAngle into servo PWM
@@ -351,6 +399,9 @@ hardware_interface::return_type real_car ::RealCarHardware::write(
   // publish the servo PWM
   servo_pub_->publishAngle(servoPWM);
 
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "motorPWM: '%i'", motorPWM);
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "direction: '%s'", direction.c_str());
+  // RCLCPP_INFO(rclcpp::get_logger("RealCarHardware"), "servoPWM: '%i'", servoPWM);
   return hardware_interface::return_type::OK;
 }
 
